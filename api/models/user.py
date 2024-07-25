@@ -1,12 +1,51 @@
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 
-class User(models.Model):
-    nombre = models.CharField(max_length=255, blank=True)
-    correo_electronico = models.EmailField(unique=True)
-    contrasena = models.CharField(max_length=128)
-    telefono_user = models.CharField(max_length=255)
-    publicaciones = models.ManyToManyField('api.DogPrediction', related_name='propietario', blank=True)
-    # Otros campos según sea necesario
+class UserManager(BaseUserManager):
+    def create_user(self, email, nombre, telefono, password=None):
+        if not email:
+            raise ValueError("Users must have an email address")
+        user = self.model(
+            email=self.normalize_email(email),
+            nombre=nombre,
+            telefono=telefono,
+        )
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, nombre, telefono, password=None):
+        user = self.create_user(
+            email,
+            password=password,
+            nombre=nombre,
+            telefono=telefono,
+        )
+        user.is_admin = True
+        user.save(using=self._db)
+        return user
+
+class User(AbstractBaseUser):
+    email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
+    nombre = models.CharField(max_length=255)
+    telefono = models.CharField(max_length=15)
+    is_active = models.BooleanField(default=True)
+    is_admin = models.BooleanField(default=False)
+
+    objects = UserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['nombre', 'telefono']
 
     def __str__(self):
-        return self.nombre
+        return self.email
+
+    def has_perm(self, perm, obj=None):
+        return True
+
+    def has_module_perms(self, app_label):
+        return True
+
+    @property
+    def is_staff(self):
+        return self.is_admin

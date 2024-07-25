@@ -14,8 +14,6 @@ class DogPrediction(models.Model):
     caracteristicas = models.TextField(blank=True)
     fecha = models.DateField(blank=True)
     form_type = models.CharField(max_length=255, blank=True)
-    Usuario = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    Refugio = models.ForeignKey(ShelterUser, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.nombre

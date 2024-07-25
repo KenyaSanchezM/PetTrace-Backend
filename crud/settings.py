@@ -17,7 +17,15 @@ MODEL_ROOT = os.path.join(BASE_DIR, 'models')
 
 
 #####################
-
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
+AUTHENTICATION_BACKENDS = [
+    'api.authentication.EmailAuthBackend',
+    # otros backends si es necesario
+]
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -42,6 +50,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    'rest_framework.authtoken', 
     "corsheaders",
     'api',
     'crud'

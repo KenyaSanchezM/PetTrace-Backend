@@ -1,57 +1,47 @@
-#api/views/views.py
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from api.models import user, shelter_user, dog_prediction, event_advertisement
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, permission_classes  # Asegúrate de importar permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated  # Asegúrate de importar IsAuthenticated
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import update_last_login
+from rest_framework.authtoken.models import Token
 
-@csrf_exempt
+from api.models.user import User
+from api.models.shelter_user import ShelterUser
+from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer
+
+@api_view(['POST'])
 def register_user(request):
-    if request.method == 'POST':
-        data = request.POST
-        nombre = data.get('nombre')
-        email = data.get('email')
-        contraseña = data.get('contraseña')
-        telefono = data.get('telefono')
-        publicaciones = data.get('publicaciones')
-        
-        # Crear usuario
-        user = User.objects.create(
-            nombre=nombre,
-            correo_electronico=email,
-            contrasena=contraseña,
-            telefono_user=telefono,
-            # publicaciones=publicaciones  # Aquí debes manejar la relación ManyToMany correctamente
-        )
-        
-        # Si publicaciones es una lista de IDs de DogPrediction:
-        if publicaciones:
-            for publicacion_id in publicaciones:
-                dog_prediction = DogPrediction.objects.get(id=publicacion_id)
-                user.publicaciones.add(dog_prediction)
-        
-        user.save()
-        
-        return JsonResponse({'message': 'Usuario registrado con éxito'})
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({'message': 'Usuario registrado con éxito'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+@api_view(['POST'])
 def register_shelter(request):
-    if request.method == 'POST':
-        data = request.POST
-        nombre = data.get('nombre')
-        email = data.get('email')
-        contraseña = data.get('contraseña')
-        telefono = data.get('telefono')
-        
-        # Crear usuario
-        shelter_user = ShelterUser.objects.create(
-            nombre=nombre,
-            correo_electronico=email,
-            contrasena=contraseña,
-            telefono_shelter=telefono
-        )
-        shelter_user.save()
-        
-        return JsonResponse({'message': 'Usuario de refugio registrado con éxito'})
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+    serializer = ShelterUserSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({'message': 'Refugio registrado con éxito'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def perfil_usuario(request):
+    user = request.user
+    serializer = UserSerializer(user)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+def login_user(request):
+    serializer = LoginSerializer(data=request.data)
+    if serializer.is_valid():
+        print("Datos validados:", serializer.validated_data)
+        user = authenticate(email=serializer.validated_data['email'], password=serializer.validated_data['password'])
+        print("Usuario autenticado:", user)
+        if user is not None:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({"message": "Inicio de sesión exitoso",'token': token.key}, status=status.HTTP_200_OK)
+        return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

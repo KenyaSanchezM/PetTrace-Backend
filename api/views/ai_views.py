@@ -82,8 +82,6 @@ def predict_breed(request):
                 fecha=request.POST.get('fecha', ''),
                 form_type=request.POST.get('form_type', ''),
                 estatus=request.POST.get('estatus',''),
-                Usuario_id=request.POST.get('usuario_id', None),
-                Refugio_id=request.POST.get('refugio_id', None)
                 
             )
             dog_prediction.save()
