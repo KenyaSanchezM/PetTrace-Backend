@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import timedelta
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -15,17 +16,36 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Model files
 MODEL_ROOT = os.path.join(BASE_DIR, 'models')
 
-
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-ciqjgzzq#e)n$o*zd_^^vvw-8xs2k^u&_j1y+sa%o7kmxvpg23')
 #####################
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
 }
+
 AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
     'api.authentication.EmailAuthBackend',
-    # otros backends si es necesario
 ]
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': 'django-insecure-ciqjgzzq#e)n$o*zd_^^vvw-8xs2k^u&_j1y+sa%o7kmxvpg23',  # Usa tu clave secreta aquí
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'TOKEN_USER_CLASS': None,
+}
+
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -37,7 +57,6 @@ SECRET_KEY = "django-insecure-ciqjgzzq#e)n$o*zd_^^vvw-8xs2k^u&_j1y+sa%o7kmxvpg23
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 
 # Application definition
@@ -56,6 +75,8 @@ INSTALLED_APPS = [
     'crud'
 ]
 
+AUTH_USER_MODEL = 'api.User'
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -65,6 +86,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [

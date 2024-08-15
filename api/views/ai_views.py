@@ -8,8 +8,13 @@ from tensorflow.keras.preprocessing import image
 import numpy as np
 from api.models.dog_prediction import DogPrediction
 from django.core.files.storage import default_storage
-
+#from django.contrib.auth.models import User
 import logging
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+
 # Configurar logging
 logger = logging.getLogger('api')
 
@@ -52,49 +57,21 @@ def predict_breed(request):
                 for chunk in img_file.chunks():
                     destination.write(chunk)
 
-            logger.debug(f'Imagen guardada en: {img_path}')
-
-            # Cargar y preprocesar la imagen para la predicción
+            # Preprocesar y predecir
             img = image.load_img(img_path, target_size=(224, 224))
             img_array = image.img_to_array(img)
             img_array = np.expand_dims(img_array, axis=0)
             img_array = img_array / 255.0  # Normalizar la imagen
 
-            logger.debug('Imagen preprocesada para la predicción')
-
-            # Realizar la predicción
             predictions = model.predict(img_array)[0]
             top_10_indices = predictions.argsort()[-10:][::-1]
             top_10_breeds = [breed_map.get(i, 'Unknown') for i in top_10_indices]
 
-            logger.debug(f'Predicciones: {top_10_breeds}')
-
-            # Guardar las predicciones en la base de datos
-            dog_prediction = DogPrediction(
-                breeds=', '.join(top_10_breeds),
-                image='dog_images/' + img_name,
-                ubicacion=request.POST.get('ubicacion', ''),
-                tieneCollar=request.POST.get('tieneCollar', ''),
-                nombre=request.POST.get('nombre', ''),
-                edad=request.POST.get('edad', ''),
-                color=request.POST.get('color', ''),
-                caracteristicas=request.POST.get('caracteristicas', ''),
-                fecha=request.POST.get('fecha', ''),
-                form_type=request.POST.get('form_type', ''),
-                estatus=request.POST.get('estatus',''),
-                
-            )
-            dog_prediction.save()
-
-            logger.info(f'Predicción guardada para la imagen: {img_name}')
-
             return JsonResponse({'top_10_breeds': top_10_breeds})
 
         except FileNotFoundError as e:
-            logger.error(f'File not found: {e}')
             return JsonResponse({'error': 'File not found'}, status=404)
         except Exception as e:
-            logger.error(f'Error processing request: {e}')
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)

@@ -1,22 +1,19 @@
 from django.contrib.auth import get_user_model
-from rest_framework.authentication import BaseAuthentication
-from rest_framework.exceptions import AuthenticationFailed
+from django.contrib.auth.backends import BaseBackend
 
-class EmailAuthBackend(BaseAuthentication):
-    def authenticate(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-
-        if email is None or password is None:
-            return None
-
+class EmailAuthBackend(BaseBackend):
+    def authenticate(self, request, email=None, password=None):
         UserModel = get_user_model()
         try:
             user = UserModel.objects.get(email=email)
+            if user.check_password(password):
+                return user
         except UserModel.DoesNotExist:
-            raise AuthenticationFailed('No such user')
+            return None
 
-        if not user.check_password(password):
-            raise AuthenticationFailed('Invalid password')
-
-        return (user, None)
+    def get_user(self, user_id):
+        UserModel = get_user_model()
+        try:
+            return UserModel.objects.get(pk=user_id)
+        except UserModel.DoesNotExist:
+            return None

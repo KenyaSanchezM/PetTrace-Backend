@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
+from django.contrib.auth import get_user_model
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, nombre, telefono, password=None):
@@ -49,3 +51,5 @@ class User(AbstractBaseUser):
     @property
     def is_staff(self):
         return self.is_admin
+
+User = get_user_model()

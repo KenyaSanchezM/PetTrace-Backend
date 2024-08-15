@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from api.models.user import User
 from api.models.shelter_user import ShelterUser
+from api.models.dog_prediction import DogPrediction
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
 class ShelterUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShelterUser
-        fields = ['nombre', 'email', 'telefono', 'estado', 'ciudad', 'direccion', 'codigoPostal', 'password_R']
+        fields = ['nombre', 'email', 'telefono', 'estado', 'ciudad', 'direccion', 'codigoPostal', 'password']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -38,9 +39,9 @@ class ShelterUserSerializer(serializers.ModelSerializer):
             estado=validated_data['estado'],
             ciudad=validated_data['ciudad'],
             direccion=validated_data['direccion'],
-            CP=validated_data['codigoPostal']
+            codigoPostal=validated_data['codigoPostal']
         )
-        user.set_password(validated_data['password_r'])
+        user.set_password(validated_data['password'])
         user.save()
         return user
 
@@ -48,3 +49,10 @@ class ShelterUserSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+
+
+class DogPredictionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DogPrediction
+        fields = ['nombre', 'edad', 'color', 'user', 'ubicacion', 'tieneCollar', 'caracteristicas', 'fecha', 'form_type', 'image']
+
