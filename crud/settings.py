@@ -22,11 +22,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+
 }
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
     'api.authentication.EmailAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+    
 ]
 
 
@@ -42,7 +44,14 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
-    'TOKEN_USER_CLASS': None,
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    
+    # Usa el nuevo serializer personalizado
+    'TOKEN_OBTAIN_PAIR_SERIALIZER': 'api.serializers.CustomTokenObtainPairSerializer',
 }
 
 
@@ -76,6 +85,7 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'api.User'
+
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter
+from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView
 from .views.ai_views import predict_breed
 
 from rest_framework_simplejwt.views import (
@@ -15,6 +15,7 @@ urlpatterns = [
     path('registro-refugio/', register_shelter, name='registro-refugio'),
     path('inicio-sesion/', login_user, name='login_user'),
     path('perfil-usuario/', perfil_usuario.as_view(), name='perfil-usuario'),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('perfil-refugio/', perfil_usuario_refugio.as_view(), name='perfil-refugio'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
 ]
