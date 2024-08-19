@@ -1,41 +1,53 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
+from .user import User
 from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import BaseUserManager
 
 def validate_postal_code(value):
     if len(value) != 5 or not value.isdigit():
         raise ValidationError('El código postal debe tener exactamente 5 dígitos y solo números.')
 
 class ShelterUserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(self, email, nombre, telefono, password=None, estado=None, ciudad=None, direccion=None, codigoPostal=None):
         if not email:
-            raise ValueError('El email debe ser proporcionado')
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
+            raise ValueError("El email debe ser proporcionado")
+        shelter_user = self.model(
+            email=self.normalize_email(email),
+            nombre=nombre,
+            telefono=telefono,
+            estado=estado,
+            ciudad=ciudad,
+            direccion=direccion,
+            codigoPostal=codigoPostal,
+            user_type='shelter'
+        )
+        shelter_user.set_password(password)  # Cambiado de 'user' a 'shelter_user'
+        shelter_user.save(using=self._db)
+        return shelter_user  # Cambiado de 'user' a 'shelter_user'
 
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_admin', True)
-        return self.create_user(email, password, **extra_fields)
+    def create_superuser(self, email, nombre, telefono, password=None):
+        shelter_user = self.create_user(
+            email=email,
+            nombre=nombre,
+            telefono=telefono,
+            password=password,
+            estado=None,
+            ciudad=None,
+            direccion=None,
+            codigoPostal=None
+        )
+        shelter_user.is_admin = True
+        shelter_user.save(using=self._db)
+        return shelter_user  # Cambiado de 'user' a 'shelter_user'
 
-User = get_user_model()
-class ShelterUser(AbstractBaseUser):
-    nombre = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
-    telefono = models.CharField(max_length=15, default='Default')
-    estado = models.CharField(max_length=128, default='Default state')
-    ciudad = models.CharField(max_length=128, default='Default City')
-    direccion = models.CharField(max_length=128, default='Default direccion')
-    codigoPostal = models.CharField(max_length=5, validators=[validate_postal_code])
-    user_type = models.CharField(max_length=20, default=('shelter'))
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['nombre']
+class ShelterUser(User):
+    estado = models.CharField(max_length=128, blank=True, null=True)
+    ciudad = models.CharField(max_length=128, blank=True, null=True)
+    direccion = models.CharField(max_length=128, blank=True, null=True)
+    codigoPostal = models.CharField(max_length=5, blank=True, null=True, validators=[validate_postal_code])
 
     objects = ShelterUserManager()
 
-    def __str__(self):
-        return self.nombre
+    class Meta:
+        verbose_name = "Shelter User"
+        verbose_name_plural = "Shelter Users"

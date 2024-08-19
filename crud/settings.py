@@ -21,7 +21,12 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-ciqjgzzq#e)n$o
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
+        'rest_framework.authentication.TokenAuthentication',
+        
+    ],'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
+    ]
 
 }
 
@@ -33,7 +38,7 @@ AUTHENTICATION_BACKENDS = [
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=20),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -49,8 +54,6 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    
-    # Usa el nuevo serializer personalizado
     'TOKEN_OBTAIN_PAIR_SERIALIZER': 'api.serializers.CustomTokenObtainPairSerializer',
 }
 
@@ -87,6 +90,8 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'api.User'
 
 
+
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -104,8 +109,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000'
     
 ]
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "crud.urls"
+
 
 TEMPLATES = [
     {

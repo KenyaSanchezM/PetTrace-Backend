@@ -16,7 +16,6 @@
 
 from django.contrib import admin
 from .models.user import User
-from .models.shelter_user import ShelterUser
+
 
 admin.site.register(User)
-admin.site.register(ShelterUser)

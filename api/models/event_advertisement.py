@@ -1,5 +1,5 @@
 from django.db import models
-from .shelter_user import ShelterUser
+
 
 class EventAdvertisement(models.Model):
     refUser = models.ForeignKey(ShelterUser, on_delete=models.CASCADE, related_name='events')

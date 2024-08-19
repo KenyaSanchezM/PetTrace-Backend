@@ -1,9 +1,9 @@
 from django.db import models
-from api.models import ShelterUser
+from .shelter_user import ShelterUser
 from django.conf import settings
 
 class DogPredictionShelter(models.Model):
-    user = models.ForeignKey(ShelterUser, on_delete=models.CASCADE, null=True, blank=True)
+    shelter_user = models.ForeignKey(ShelterUser, on_delete=models.CASCADE, null=True, blank=True)
     breeds = models.CharField(max_length=255)
     image = models.ImageField(upload_to='dog_images/', default='temp_image.jpg' )
     nombre = models.CharField(max_length=255, blank=True)

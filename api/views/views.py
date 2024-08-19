@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from api.models.shelter_user import ShelterUser
-from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer
+from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer, DogPredictionShelterSerializer
 from api.models.dog_prediction import DogPrediction
 from api.models.dog_prediction_shelter import DogPredictionShelter
 from django.contrib.auth import get_user_model
@@ -25,6 +25,8 @@ import jwt
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.permissions import AllowAny
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
@@ -35,6 +37,7 @@ User = get_user_model()
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny]) 
 def register_user(request):
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
@@ -43,6 +46,7 @@ def register_user(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
+@permission_classes([AllowAny]) 
 def register_shelter(request):
     serializer = ShelterUserSerializer(data=request.data)
     if serializer.is_valid():
@@ -52,13 +56,13 @@ def register_shelter(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def login_user(request):
     email = request.data.get('email')
     password = request.data.get('password')
-    print('Primero', email, password)
-    
+
+    # Autenticación del usuario
     user = authenticate(request, email=email, password=password)
-    print('Segundo', user)
 
     if user:
         # Usa el CustomTokenObtainPairSerializer para obtener ambos tokens
@@ -68,13 +72,10 @@ def login_user(request):
             'access': str(serializer.access_token),
             'user_type': user.user_type
         }
-        print('token', tokens)
-        print('nombre', user.nombre)
-        print('email', user.email)
-        print('usertype', user.user_type)
         return Response(tokens)
     else:
         return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 
 class perfil_usuario(APIView):
@@ -82,11 +83,10 @@ class perfil_usuario(APIView):
 
     def get(self, request):
         user = request.user
-        
-        # Si el tipo de usuario es refugio, no se permite acceso
+
         if user.user_type == 'shelter':
             return Response({'error': 'No autorizado para acceder a este perfil'}, status=status.HTTP_403_FORBIDDEN)
-        
+
         predictions = DogPrediction.objects.filter(user=user)
         user_serializer = UserSerializer(user)
         prediction_serializer = DogPredictionSerializer(predictions, many=True)
@@ -97,48 +97,47 @@ class perfil_usuario(APIView):
         })
 
 
-
 class perfil_usuario_refugio(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-        token = request.headers.get('Authorization').split(' ')[1]  # Obtén el token del encabezado
-        decoded_token = AccessToken(token)  # Decodifica el token
-        email_from_token = decoded_token['email']
 
-        # Recuperar el usuario basado en el email del token
+        # Verificar si el usuario es de tipo 'shelter'
+        if user.user_type != 'shelter':
+            return Response({'error': 'No autorizado para acceder a este perfil'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
-            user = User.objects.get(email=email_from_token)
-            if user.user_type != 'shelter':
-                return Response({'error': 'No autorizado para acceder a este perfil'}, status=status.HTTP_403_FORBIDDEN)
-        except User.DoesNotExist:
+            # Obtener el perfil del refugio
+            shelter_user = ShelterUser.objects.get(pk=user.pk)
+
+            # Obtener las predicciones asociadas a este refugio, si existe una relación
+            predictions = DogPredictionShelter.objects.filter(shelter_user=shelter_user)
+
+            # Serializar los datos del refugio
+            user_serializer = ShelterUserSerializer(shelter_user)
+            prediction_serializer = DogPredictionShelterSerializer(predictions, many=True)
+
+            # Devolver la información del refugio y las predicciones
+            return Response({
+                'shelter_user': user_serializer.data,
+                'predictions': prediction_serializer.data if predictions.exists() else []
+            })
+        except ShelterUser.DoesNotExist:
             return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Utilizar directamente el usuario autenticado en lugar de realizar una nueva búsqueda
-        shelter_user = user
-        
-        # Obtener las predicciones asociadas al refugio
-        predictions = DogPredictionShelter.objects.filter(user=shelter_user)
-        user_serializer = ShelterUserSerializer(shelter_user)
-        prediction_serializer = DogPredictionSerializer(predictions, many=True)
-
-        return Response({
-            'user': user_serializer.data,
-            'predictions': prediction_serializer.data if predictions.exists() else []
-        })
 
 
 
 
-
+# Configurar logging
+logger = logging.getLogger('api')
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def register_dog(request):
     if request.method == 'POST':
         try:
-            # Verifica si el usuario está autenticado
             if not request.user.is_authenticated:
                 return JsonResponse({'error': 'User not authenticated'}, status=403)
 
@@ -152,7 +151,6 @@ def register_dog(request):
                     for chunk in img_file.chunks():
                         destination.write(chunk)
 
-            # Guardar el registro del perro
             dog_prediction = DogPrediction(
                 breeds=request.POST.get('breeds', ''),
                 image='dog_images/' + img_name if img_file else None,
@@ -164,7 +162,7 @@ def register_dog(request):
                 caracteristicas=request.POST.get('caracteristicas', ''),
                 fecha=request.POST.get('fecha', ''),
                 form_type=request.POST.get('form_type', ''),
-                user=request.user  # Asignar el usuario autenticado
+                shelter_user = request.user
             )
             dog_prediction.save()
 
@@ -175,13 +173,14 @@ def register_dog(request):
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+logger = logging.getLogger('api')
+
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def register_dog_shelter(request):
     if request.method == 'POST':
         try:
-            # Verifica si el usuario está autenticado
             if not request.user.is_authenticated:
                 return JsonResponse({'error': 'User not authenticated'}, status=403)
 
@@ -189,13 +188,20 @@ def register_dog_shelter(request):
             img_name = img_file.name if img_file else None
             img_path = os.path.join(settings.MEDIA_ROOT, 'dog_images', img_name) if img_file else None
 
+            logger.info(f"Authenticated user: {request.user}")
+
             if img_file:
                 os.makedirs(os.path.dirname(img_path), exist_ok=True)
                 with open(img_path, 'wb+') as destination:
                     for chunk in img_file.chunks():
                         destination.write(chunk)
 
-            # Guardar el registro del perro
+            try:
+                user_instance = ShelterUser.objects.get(pk=request.user.pk)
+                logger.info(f"ShelterUser instance: {user_instance}")
+            except ShelterUser.DoesNotExist:
+                return JsonResponse({'error': 'ShelterUser instance not found'}, status=404)
+
             dog_prediction_shelter = DogPredictionShelter(
                 breeds=request.POST.get('breeds', ''),
                 image='dog_images/' + img_name if img_file else None,
@@ -208,13 +214,14 @@ def register_dog_shelter(request):
                 temperamento=request.POST.get('temperamento', ''),
                 vacunas=request.POST.get('vacunas', ''),
                 esterilizado=request.POST.get('esterilizado', ''),
-                user=request.user  # Asignar el usuario autenticado
+                shelter_user=user_instance
             )
-            dog_prediction.save()
+            dog_prediction_shelter.save()
 
             return JsonResponse({'message': 'Registro guardado exitosamente'})
 
         except Exception as e:
+            logger.error(f"Error al registrar el perro de refugio: {str(e)}")
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)

@@ -1,15 +1,17 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
-from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, nombre, telefono, password=None):
+    def create_user(self, email, nombre, telefono, password=None, user_type='user'):
         if not email:
             raise ValueError("El email debe ser proporcionado")
         user = self.model(
             email=self.normalize_email(email),
             nombre=nombre,
             telefono=telefono,
+            user_type=user_type
         )
         user.set_password(password)
         user.save(using=self._db)
@@ -21,18 +23,18 @@ class UserManager(BaseUserManager):
             nombre=nombre,
             telefono=telefono,
             password=password,
+            user_type='admin'
         )
         user.is_admin = True
         user.save(using=self._db)
         return user
 
+
 class User(AbstractBaseUser):
     email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
     nombre = models.CharField(max_length=255)
     telefono = models.CharField(max_length=15)
-    is_active = models.BooleanField(default=True)
-    is_admin = models.BooleanField(default=False)
-    user_type = models.CharField(max_length=20, default=('user'))
+    user_type = models.CharField(max_length=20, default='null')
 
     objects = UserManager()
 
@@ -51,5 +53,3 @@ class User(AbstractBaseUser):
     @property
     def is_staff(self):
         return self.is_admin
-
-User = get_user_model()
