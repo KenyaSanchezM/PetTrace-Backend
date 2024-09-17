@@ -6,6 +6,8 @@ class DogPredictionShelter(models.Model):
     shelter_user = models.ForeignKey(ShelterUser, on_delete=models.CASCADE, null=True, blank=True)
     breeds = models.CharField(max_length=255)
     image = models.ImageField(upload_to='dog_images/', default='temp_image.jpg' )
+    profile_image1 = models.ImageField(upload_to='dog_images/', null=True, blank=True)  # Primera imagen para mostrar
+    profile_image2 = models.ImageField(upload_to='dog_images/', null=True, blank=True)  # Segunda imagen para mostrar
     nombre = models.CharField(max_length=255, blank=True)
     edad = models.IntegerField()
     color = models.CharField(max_length=255, blank=True)

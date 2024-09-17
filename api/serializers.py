@@ -18,54 +18,66 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
 class UserSerializer(serializers.ModelSerializer):
+    profile_image = serializers.ImageField(required=False)
+
     class Meta:
         model = User
-        fields = ['email', 'nombre', 'telefono', 'password', 'user_type']
+        fields = ['email', 'nombre', 'telefono', 'password', 'user_type', 'profile_image']
         extra_kwargs = {
             'password': {'write_only': True}
         }
 
     def create(self, validated_data):
+        profile_image = validated_data.pop('profile_image', None)  # Extraer la imagen si existe
         user = User(
             email=validated_data['email'],
             nombre=validated_data['nombre'],
-            telefono=validated_data['telefono']
+            telefono=validated_data['telefono'],
+            user_type=validated_data['user_type']
         )
+        if profile_image:
+            user.profile_image = profile_image
         user.set_password(validated_data['password'])
         user.save()
         return user
 
-
-
 class ShelterUserSerializer(serializers.ModelSerializer):
+    profile_image = serializers.ImageField(required=False)
+
     class Meta:
         model = ShelterUser
-        fields = ['email', 'nombre', 'telefono', 'password', 'estado', 'ciudad', 'direccion', 'codigoPostal']
+        fields = ['email', 'nombre', 'telefono', 'user_type', 'profile_image', 'password', 'estado', 'ciudad', 'direccion', 'codigoPostal']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'profile_image': {'required': False}
+        }
 
     def create(self, validated_data):
         email = validated_data['email']
-        # Verificar si el email ya está registrado
         if ShelterUser.objects.filter(email=email).exists():
             raise serializers.ValidationError({'email': 'Este email ya está registrado.'})
 
-        estado = validated_data.pop('estado', None)
-        ciudad = validated_data.pop('ciudad', None)
-        direccion = validated_data.pop('direccion', None)
-        codigoPostal = validated_data.pop('codigoPostal', None)
+        # Extraer imagen de perfil si existe
+        profile_image = validated_data.pop('profile_image', None)
 
-        shelter_user = ShelterUser.objects.create_user(
+        shelter_user = ShelterUser(
             email=validated_data['email'],
             nombre=validated_data['nombre'],
             telefono=validated_data['telefono'],
-            password=validated_data['password'],
-            estado=estado,
-            ciudad=ciudad,
-            direccion=direccion,
-            codigoPostal=codigoPostal
+            estado=validated_data.get('estado', None),
+            ciudad=validated_data.get('ciudad', None),
+            direccion=validated_data.get('direccion', None),
+            codigoPostal=validated_data.get('codigoPostal', None),
+            user_type=validated_data['user_type'],
         )
-        return ShelterUser
+        shelter_user.set_password(validated_data['password'])
 
+        # Asignar la imagen de perfil si está presente
+        if profile_image:
+            shelter_user.profile_image = profile_image
 
+        shelter_user.save()
+        return shelter_user
 
 
 class LoginSerializer(serializers.Serializer):
@@ -74,11 +86,16 @@ class LoginSerializer(serializers.Serializer):
 
 
 class DogPredictionSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)  # Cambia este campo para incluir los datos completos del usuario
+
     class Meta:
         model = DogPrediction
-        fields = ['nombre', 'edad', 'color', 'user', 'ubicacion', 'tieneCollar', 'caracteristicas', 'fecha', 'form_type', 'image']
+        fields = ['id','nombre', 'edad', 'color', 'user', 'ubicacion', 'tieneCollar','breeds', 
+                  'caracteristicas', 'fecha', 'form_type', 'image', 'profile_image1', 'profile_image2', 'sexo']
 
+                  
 class DogPredictionShelterSerializer(serializers.ModelSerializer):
     class Meta:
         model = DogPredictionShelter  # Suponiendo que este es el modelo para las predicciones de refugios
-        fields = ['shelter_user', 'breeds', 'image', 'nombre', 'edad', 'color', 'caracteristicas', 'sexo', 'tamanio', 'temperamento', 'vacunas', 'esterilizado']
+        fields = ['id','shelter_user', 'breeds', 'image', 'nombre', 'edad', 'color',
+         'caracteristicas', 'sexo', 'tamanio', 'temperamento', 'vacunas', 'esterilizado', 'profile_image1', 'profile_image2']

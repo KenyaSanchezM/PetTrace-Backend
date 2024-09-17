@@ -2,7 +2,6 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 from django.core.exceptions import ValidationError
 
-
 class UserManager(BaseUserManager):
     def create_user(self, email, nombre, telefono, password=None, user_type='user'):
         if not email:
@@ -34,8 +33,9 @@ class User(AbstractBaseUser):
     email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
     nombre = models.CharField(max_length=255)
     telefono = models.CharField(max_length=15)
-    user_type = models.CharField(max_length=20, default='null')
-
+    user_type = models.CharField(max_length=20, default='user')
+    profile_image = models.ImageField(upload_to='users_images/', blank=True, null=True)
+    marked_dogs = models.ManyToManyField('DogPrediction', related_name='marked_by_users', blank=True)
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
