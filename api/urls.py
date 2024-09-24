@@ -1,6 +1,7 @@
-from django.urls import path
+from django.urls import path, include
 from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog
 from .views.ai_views import predict_breed
+
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -26,3 +27,4 @@ urlpatterns = [
     path('search-matches/', SearchDogsView.as_view(), name='search-matches'),
     path('mark-dog/<int:pk>/', mark_dog, name='mark-dog'),
 ]
+
