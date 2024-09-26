@@ -66,6 +66,16 @@ def predict_breed(request):
             predictions = model.predict(img_array)[0]
             top_10_indices = predictions.argsort()[-10:][::-1]
             top_10_breeds = [breed_map.get(i, 'Unknown') for i in top_10_indices]
+            top_10_percentages = [predictions[i] for i in top_10_indices]
+
+            # Verificar si la probabilidad más alta es menor al 15%
+            highest_percentage = top_10_percentages[0]
+            if highest_percentage < 0.35:
+                return JsonResponse({'error': 'Bajo porcentaje de coincidencias'}, status=400)
+
+            # Imprimir las razas y sus porcentajes
+            for breed, percentage in zip(top_10_breeds, top_10_percentages):
+                print(f"Raza: {breed}, Porcentaje: {percentage:.2f}")
 
             return JsonResponse({'top_10_breeds': top_10_breeds})
 

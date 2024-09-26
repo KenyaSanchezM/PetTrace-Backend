@@ -38,13 +38,22 @@ LOGGING = {
         },
     },
     'loggers': {
-        'api': {  # Asegúrate de que coincida con el nombre del logger
+        'django': {
             'handlers': ['console'],
-            'level': 'INFO',  # Cambia a DEBUG si quieres más detalles
-            'propagate': True,
+            'level': 'INFO',  # Cambiar el nivel a INFO o DEBUG según lo que quieras ver
+        },
+        'my_logger': {
+            'handlers': ['console'],
+            'level': 'INFO',  # Cambiar a INFO para ver tus logs personalizados
+        },
+        'api': {  # Añadir esta configuración
+            'handlers': ['console'],
+            'level': 'INFO',
         },
     },
 }
+
+
 
 
 
@@ -56,7 +65,7 @@ AUTHENTICATION_BACKENDS = [
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,

@@ -164,6 +164,7 @@ def register_dog(request):
             img_file = request.FILES.get('file')
             profile_img1 = request.FILES.get('profile_image1')
             profile_img2 = request.FILES.get('profile_image2')
+            
 
             dog_prediction = DogPrediction(
                 breeds=request.POST.get('breeds', ''),
@@ -398,7 +399,6 @@ class SearchDogsView(generics.GenericAPIView):
             logger.info(f"After filtering2: {queryset.count()} results")
 
 
-
         # Excluir perros marcados como 'no mío' para el usuario actual
         not_mine_ids = UserDogRelationship.objects.filter(user=user, is_mine=False).values_list('dog_id', flat=True)
         queryset = queryset.exclude(id__in=not_mine_ids)
@@ -454,43 +454,84 @@ class PerfilUsuarioView(APIView):
         except User.DoesNotExist:
             return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
+
+logger = logging.getLogger('api')
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dog_filter(request):
-    user = request.user  # Obtiene el usuario autenticado desde la solicitud
+    logger.info(f"GET parameters: {request.GET}")
+
+    user = request.user
     breeds = request.GET.get('breeds', None)
     colors = request.GET.get('colors', None)
     is_mine = request.GET.get('is_mine', None)
-    sexo = request.GET.get('sexo', None)
-    fecha = request.GET.get('fecha', None)
-    estado = request.GET.get('from_type', None)
+    sexo = request.GET.get('sex', None)
+    fecha = request.GET.get('date', None)
+    estado = request.GET.get('status', None)
+
+    # Validar y convertir el valor de 'is_mine' de cadena a booleano
+    if is_mine == 'true':
+        is_mine = True
+    elif is_mine == 'false':
+        is_mine = False
+    else:
+        is_mine = None  # Si no está presente o es otro valor, lo consideramos como no seleccionado
+    
+    print(f"Valor de is_mine recibido: {is_mine}")
+    
 
     queryset = DogPrediction.objects.all()
 
-    if breeds:
-        breeds_list = breeds.split(',')  # Lista de razas seleccionadas en el filtro
-        queryset = queryset.filter(breeds__iregex=r"(" + "|".join(breeds_list) + ")")
+    logger.info(f"Valor de is mine recibido1: {is_mine}")
+    logger.info(f"Valor de : {sexo}")
+    logger.info(f"Valor de : {fecha}")
+    logger.info(f"Valor de : {estado}")
 
+    if breeds:
+        breeds_list = [breed.strip() for breed in breeds.split(',')][:5]  # Limpiar espacios y limitar a las primeras 5
+        if len(breeds_list) > 0:
+            breed_queries = Q()  # Inicializar Q para las razas
+
+            # Añadir condiciones para cada raza
+            for breed in breeds_list:
+                breed_queries |= Q(breeds__icontains=breed)  # Usar 'icontains' para coincidir con el nombre en el registro
+
+            # Filtrar el queryset usando la consulta construida
+            queryset = queryset.filter(breed_queries)
+
+
+    # Filtrar por colores
     if colors:
-        colors_list = colors.split(',')
-        filters &= Q(color__iregex=r"(" + "|".join(colors_list) + ")")
+        colors_list = [colors.strip() for colors in colors.split(',')]
+        if colors and len(colors_list) > 0:
+            color_queries = Q()
+
+            # Añadir condiciones para cada raza
+            for color in colors_list:
+                color_queries |= Q(color__icontains=color)  # Usar 'icontains' para coincidir con el nombre en el registro
+
+            # Filtrar el queryset usando la consulta construida
+            queryset = queryset.filter(color_queries)
+
 
     if is_mine is not None:
-        if is_mine.lower() == 'true':
-            queryset = queryset.filter(userdogrelationship__user=user, userdogrelationship__is_mine=True)
-        elif is_mine.lower() == 'false':
-            queryset = queryset.filter(userdogrelationship__user=user, userdogrelationship__is_mine=False)
+        is_mine = is_mine.lower() == 'true' if isinstance(is_mine, str) else is_mine  # Convertir a booleano si es string
+        queryset = queryset.filter(userdogrelationship__user=user, userdogrelationship__is_mine=is_mine)
 
-
+    # Filtrar por sexo
     if sexo:
-        queryset = queryset.filter(sexo=sexo)
+        logger.info(f"Valor de sexo recibido: {sexo}")
+        queryset = queryset.filter(sexo__iexact=sexo)  # Cambié a 'iexact' para hacer una comparación exacta sin importar mayúsculas
 
+    # Filtrar por fecha
     if fecha:
-        queryset = queryset.filter(fecha__gte=fecha)  
+        queryset = queryset.filter(fecha=fecha)
 
+    # Filtrar por estado
     if estado:
+        logger.info(f"Valor de estado recibido: {estado}")
         queryset = queryset.filter(form_type=estado)
-
 
     serializer = DogPredictionSerializer(queryset, many=True)
     return Response(serializer.data)
