@@ -28,6 +28,13 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+class UserDogRelationship(models.Model):
+    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    dog = models.ForeignKey('DogPrediction', on_delete=models.CASCADE)
+    is_mine = models.BooleanField(default=False)  # True si es "mío", False si es "no es mío"
+
+    class Meta:
+        unique_together = ('user', 'dog')  # Evitar duplicados
 
 class User(AbstractBaseUser):
     email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
@@ -35,7 +42,8 @@ class User(AbstractBaseUser):
     telefono = models.CharField(max_length=15)
     user_type = models.CharField(max_length=20, default='user')
     profile_image = models.ImageField(upload_to='users_images/', blank=True, null=True)
-    marked_dogs = models.ManyToManyField('DogPrediction', related_name='marked_by_users', blank=True)
+    #marked_dogs = models.ManyToManyField('DogPrediction', related_name='marked_by_users', blank=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = 'email'

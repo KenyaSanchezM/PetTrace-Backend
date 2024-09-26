@@ -34,23 +34,18 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
-            'level': 'INFO',
             'class': 'logging.StreamHandler',
         },
     },
     'loggers': {
-        'django': {
+        'api': {  # Asegúrate de que coincida con el nombre del logger
             'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'myapp': {  # Asegúrate de que esto esté en el mismo nivel que tu app
-            'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'INFO',  # Cambia a DEBUG si quieres más detalles
             'propagate': True,
         },
     },
 }
+
 
 
 AUTHENTICATION_BACKENDS = [

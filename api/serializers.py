@@ -87,11 +87,12 @@ class LoginSerializer(serializers.Serializer):
 
 class DogPredictionSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)  # Cambia este campo para incluir los datos completos del usuario
+    user_id = serializers.IntegerField(source='user.id', read_only=True)  # Agrega esta línea
 
     class Meta:
         model = DogPrediction
         fields = ['id','nombre', 'edad', 'color', 'user', 'ubicacion', 'tieneCollar','breeds', 
-                  'caracteristicas', 'fecha', 'form_type', 'image', 'profile_image1', 'profile_image2', 'sexo']
+                  'caracteristicas', 'fecha', 'form_type', 'image', 'profile_image1', 'profile_image2', 'sexo','user_id']
 
                   
 class DogPredictionShelterSerializer(serializers.ModelSerializer):
@@ -99,3 +100,4 @@ class DogPredictionShelterSerializer(serializers.ModelSerializer):
         model = DogPredictionShelter  # Suponiendo que este es el modelo para las predicciones de refugios
         fields = ['id','shelter_user', 'breeds', 'image', 'nombre', 'edad', 'color',
          'caracteristicas', 'sexo', 'tamanio', 'temperamento', 'vacunas', 'esterilizado', 'profile_image1', 'profile_image2']
+

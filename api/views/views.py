@@ -12,6 +12,7 @@ from api.models.shelter_user import ShelterUser
 from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer, DogPredictionShelterSerializer
 from api.models.dog_prediction import DogPrediction
 from api.models.dog_prediction_shelter import DogPredictionShelter
+from api.models.user import UserDogRelationship
 from django.contrib.auth import get_user_model
 import os
 from django.conf import settings
@@ -29,7 +30,9 @@ from rest_framework.permissions import AllowAny
 from django.http import QueryDict
 import json
 from django.db.models import Q
-
+from datetime import date
+from django.db import models
+from django.db.models import OuterRef, Subquery, Exists
 
 
 
@@ -241,9 +244,36 @@ def register_dog_shelter(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 class DogPredictionListView(generics.ListAPIView):
-    queryset = DogPrediction.objects.select_related('user').all()  # Optimiza para incluir los datos del usuario
     serializer_class = DogPredictionSerializer
-    permission_classes = [IsAuthenticated]  # Asegúrate de que se requiera autenticación
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Subquery para verificar si hay una relación del usuario con el perro
+        userdogrelationship_exists = UserDogRelationship.objects.filter(
+            user=user,
+            dog_id=OuterRef('id')
+        )
+
+        # Obtener todos los perros
+        queryset = DogPrediction.objects.annotate(
+            relationship_exists=Subquery(userdogrelationship_exists.values('id')[:1])
+        ).filter(
+            Q(userdogrelationship__user=user, userdogrelationship__is_mine=True) |
+            Q(relationship_exists__isnull=True)
+        ).order_by('-fecha')
+
+        # Usar un conjunto para evitar duplicados
+        seen_dogs = set()
+        unique_dogs = []
+        
+        for dog in queryset:
+            if dog.id not in seen_dogs:
+                unique_dogs.append(dog)
+                seen_dogs.add(dog.id)
+
+        return unique_dogs
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -297,7 +327,7 @@ def update_dog_prediction_shelter(request, pk):
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('api')
 
 class SearchDogsView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -305,56 +335,162 @@ class SearchDogsView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         logger.info("SearchDogsView GET request received.")
         user = request.user
-        breeds = request.query_params.get('breeds', '[]')
-        colors = request.query_params.get('colors', '[]')
 
-        logger.info(f"Parameters received: breeds={breeds}, colors={colors}")
+        # Obtener el parámetro 'search' de la URL
+        search_params = request.query_params.get('search', '{}')
+        logger.info(f"search_params received: {search_params}")  # Log del parámetro recibido
 
+        # Manejo de JSON vacío o mal formado
         try:
-            breeds = json.loads(breeds)  # Convertir a lista
-            colors = json.loads(colors)
-        except json.JSONDecodeError:
-            logger.error("Error decoding parameters.")
+            search_params = json.loads(search_params)
+            logger.info(f"Decoded search_params: {search_params}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding search params: {str(e)}")
             return JsonResponse({"message": "Error en el formato de los parámetros."}, status=400)
 
-        queryset = DogPrediction.objects.all()
+        # Obtener el ID del perro después de decodificar el JSON
+        current_dog_id = search_params.get('current_dog_id')
+        logger.info(f"current_dog_id received: {current_dog_id}")  # Log del ID del perro
 
-        # Filtrar por razas
+        if not current_dog_id:
+            logger.error("No se proporcionó el ID del perro.")
+            return JsonResponse({"message": "Falta el ID del perro."}, status=400)
+
+        try:
+            # Buscar el perro con el ID proporcionado
+            current_dog = DogPrediction.objects.get(id=current_dog_id)
+        except DogPrediction.DoesNotExist:
+            logger.error(f"El perro con ID {current_dog_id} no existe.")
+            return JsonResponse({"message": "El perro no existe."}, status=404)
+
+        # Normalizar las razas y colores
+        breeds = [breed.strip().lower() for breed in current_dog.breeds.split(',')] if current_dog.breeds else []
+        colors = [color.strip().lower() for color in current_dog.color.split(',')] if current_dog.color else []
+
+        logger.info(f"Buscando coincidencias para el perro con ID {current_dog_id}: razas={breeds}, colores={colors}")
+
+        # Filtrar perros que no sean el actual
+        queryset = DogPrediction.objects.exclude(id=current_dog_id)
+
+        # Filtrar por razas usando `Q`
         if breeds:
-            breeds = breeds[:5]  
-            queryset = queryset.filter(breeds__contains=breeds)
+            breed_query = Q()
+            for breed in breeds[:5]:  # Limitar a las primeras 5 razas
+                breed_query |= Q(breeds__icontains=breed.lower())
+            queryset = queryset.filter(breed_query)
 
-        # Filtrar por colores
+        # Filtrar por colores usando `Q`
         if colors:
-            queryset = queryset.filter(color__contains=colors)
+            color_query = Q()
+            for color in colors:
+                color_query |= Q(color__icontains=color.lower())
+            queryset = queryset.filter(color_query)
+        
+        # Filtrar por tipo (perdido/encontrado)
+        logger.info(f"tipo de perro:{current_dog.form_type}")
+        if current_dog.form_type.lower() == "perdido":  # Asegúrate de que se usa minúsculas
+            logger.info(f"Before filtering1: {queryset.count()} results")
+            queryset = queryset.filter(form_type__iexact="encontrado", fecha__gte=current_dog.fecha)
+            logger.info(f"After filtering1: {queryset.count()} results")
+        elif current_dog.form_type.lower() == "encontrado":
+            logger.info(f"Before filtering2: {queryset.count()} results")
+            queryset = queryset.filter(form_type__iexact="perdido", fecha__lte=current_dog.fecha)
+            logger.info(f"After filtering2: {queryset.count()} results")
 
-        # Excluir perros que ya fueron marcados como 'is mine' o 'not mine'
-        marked_dogs_ids = user.marked_dogs.values_list('id', flat=True)
-        queryset = queryset.exclude(id__in=marked_dogs_ids)
+
+
+        # Excluir perros marcados como 'no mío' para el usuario actual
+        not_mine_ids = UserDogRelationship.objects.filter(user=user, is_mine=False).values_list('dog_id', flat=True)
+        queryset = queryset.exclude(id__in=not_mine_ids)
+
 
         logger.info(f"Filtered queryset: {queryset}")
 
+        # Serializar y devolver los resultados
         serializer = DogPredictionSerializer(queryset, many=True)
         return JsonResponse(serializer.data, safe=False, status=200)
-
-
         
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def mark_dog(request, dog_id):
+def mark_dog(request, pk):  # pk en lugar de dog_id
     user = request.user
     is_marked = request.data.get('is_marked', None)
-    
+
     if is_marked is None:
         return Response({'error': 'El estado de marcado es requerido.'}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     try:
-        # Lógica para marcar el perro como "es mío" o "no es mío"
-        dog = DogPrediction.objects.get(id=dog_id)
-        if is_marked:
-            user.marked_dogs.add(dog)
-        else:
-            user.marked_dogs.remove(dog)
+        dog = DogPrediction.objects.get(id=pk)
+        
+        # Buscar o crear la relación entre el usuario y el perro
+        relationship, created = UserDogRelationship.objects.get_or_create(user=user, dog=dog)
+        
+        # Actualizar si es "mío" o "no es mío"
+        relationship.is_mine = is_marked
+        relationship.save()
+
         return Response({'status': 'success'}, status=status.HTTP_200_OK)
+    
     except DogPrediction.DoesNotExist:
         return Response({'error': 'Perro no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class PerfilUsuarioView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            user_data = UserSerializer(user).data
+            
+            # Obtén los perros asociados a este usuario
+            perros = DogPrediction.objects.filter(user=user)
+            perros_data = DogPredictionSerializer(perros, many=True).data
+            
+            # Agrega los perros a los datos del usuario
+            user_data['predictions'] = perros_data
+            
+            return Response(user_data, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dog_filter(request):
+    user = request.user  # Obtiene el usuario autenticado desde la solicitud
+    breeds = request.GET.get('breeds', None)
+    colors = request.GET.get('colors', None)
+    is_mine = request.GET.get('is_mine', None)
+    sexo = request.GET.get('sexo', None)
+    fecha = request.GET.get('fecha', None)
+    estado = request.GET.get('from_type', None)
+
+    queryset = DogPrediction.objects.all()
+
+    if breeds:
+        breeds_list = breeds.split(',')  # Lista de razas seleccionadas en el filtro
+        queryset = queryset.filter(breeds__iregex=r"(" + "|".join(breeds_list) + ")")
+
+    if colors:
+        colors_list = colors.split(',')
+        filters &= Q(color__iregex=r"(" + "|".join(colors_list) + ")")
+
+    if is_mine is not None:
+        if is_mine.lower() == 'true':
+            queryset = queryset.filter(userdogrelationship__user=user, userdogrelationship__is_mine=True)
+        elif is_mine.lower() == 'false':
+            queryset = queryset.filter(userdogrelationship__user=user, userdogrelationship__is_mine=False)
+
+
+    if sexo:
+        queryset = queryset.filter(sexo=sexo)
+
+    if fecha:
+        queryset = queryset.filter(fecha__gte=fecha)  
+
+    if estado:
+        queryset = queryset.filter(form_type=estado)
+
+
+    serializer = DogPredictionSerializer(queryset, many=True)
+    return Response(serializer.data)
