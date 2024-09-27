@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from api.models.shelter_user import ShelterUser
+from api.models.user import User
 from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer, DogPredictionShelterSerializer
 from api.models.dog_prediction import DogPrediction
 from api.models.dog_prediction_shelter import DogPredictionShelter
@@ -29,6 +30,8 @@ from rest_framework.permissions import AllowAny
 from django.http import QueryDict
 import json
 from django.db.models import Q
+from rest_framework.generics import ListAPIView
+
 
 
 
@@ -61,19 +64,15 @@ def register_user(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_shelter(request):
-    # Combina data y files
-    data = request.data.copy()  # Crear una copia mutable de request.data
-    data.update(request.FILES)  # Añadir los archivos al diccionario
-
-    # Inicializa el serializer con los datos combinados
-    serializer = ShelterUserSerializer(data=data)
+    serializer = ShelterUserSerializer(data=request.data)
 
     if serializer.is_valid():
         serializer.save()
         return Response({'message': 'Refugio registrado con éxito'}, status=status.HTTP_201_CREATED)
     else:
+        # Imprime los errores del serializer para depuración
+        print("Errores del serializer:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -358,3 +357,17 @@ def mark_dog(request, dog_id):
         return Response({'status': 'success'}, status=status.HTTP_200_OK)
     except DogPrediction.DoesNotExist:
         return Response({'error': 'Perro no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+    
+
+class Refugios(ListAPIView):
+    def get(self, request):
+        usuarios_refugio = User.objects.select_related('shelter').all()  # Optimiza para incluir los datos del usuario
+        refugios = ShelterUser.objects.all()
+
+        refugios_serializados = ShelterUserSerializer(refugios, many=True).data
+        usuarios_serializados = UserSerializer(usuarios_refugio, many=True).data
+
+        return Response({
+            "refugios": refugios_serializados,
+            "usuarios": usuarios_serializados,
+        }, status=status.HTTP_200_OK)
