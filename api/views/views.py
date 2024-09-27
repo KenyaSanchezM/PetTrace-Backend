@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from api.models.shelter_user import ShelterUser
-from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer, DogPredictionShelterSerializer
+from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer, DogPredictionShelterSerializer, LostDogSerializer
 from api.models.dog_prediction import DogPrediction
 from api.models.dog_prediction_shelter import DogPredictionShelter
 from api.models.user import UserDogRelationship
@@ -478,15 +478,14 @@ def dog_filter(request):
     else:
         is_mine = None  # Si no está presente o es otro valor, lo consideramos como no seleccionado
     
-    print(f"Valor de is_mine recibido: {is_mine}")
-    
+    #print(f"Valor de is_mine recibido: {is_mine}")
 
     queryset = DogPrediction.objects.all()
 
-    logger.info(f"Valor de is mine recibido1: {is_mine}")
-    logger.info(f"Valor de : {sexo}")
-    logger.info(f"Valor de : {fecha}")
-    logger.info(f"Valor de : {estado}")
+    #logger.info(f"Valor de is mine recibido1: {is_mine}")
+    #logger.info(f"Valor de : {sexo}")
+    #logger.info(f"Valor de : {fecha}")
+    #logger.info(f"Valor de : {estado}")
 
     if breeds:
         breeds_list = [breed.strip() for breed in breeds.split(',')][:5]  # Limpiar espacios y limitar a las primeras 5
@@ -499,7 +498,6 @@ def dog_filter(request):
 
             # Filtrar el queryset usando la consulta construida
             queryset = queryset.filter(breed_queries)
-
 
     # Filtrar por colores
     if colors:
@@ -534,4 +532,12 @@ def dog_filter(request):
         queryset = queryset.filter(form_type=estado)
 
     serializer = DogPredictionSerializer(queryset, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def primeros_seis_perros(request):
+    perros = DogPrediction.objects.order_by('fecha')[:6]
+    print(perros)  # Verifica qué registros se están obteniendo
+    serializer = LostDogSerializer(perros, many=True)  # Usa el nuevo serializer
     return Response(serializer.data)

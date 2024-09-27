@@ -91,7 +91,7 @@ class DogPredictionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DogPrediction
-        fields = ['id','nombre', 'edad', 'color', 'user', 'ubicacion', 'tieneCollar','breeds', 
+        fields = ['id','nombre', 'edad', 'color', 'user', 'ubicacion', 'tieneCollar','breeds',
                   'caracteristicas', 'fecha', 'form_type', 'image', 'profile_image1', 'profile_image2', 'sexo','user_id']
 
                   
@@ -101,3 +101,9 @@ class DogPredictionShelterSerializer(serializers.ModelSerializer):
         fields = ['id','shelter_user', 'breeds', 'image', 'nombre', 'edad', 'color',
          'caracteristicas', 'sexo', 'tamanio', 'temperamento', 'vacunas', 'esterilizado', 'profile_image1', 'profile_image2']
 
+
+class LostDogSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = DogPrediction
+        fields = ['id', 'nombre', 'image', 'caracteristicas', 'form_type']  # Asegúrate de incluir todos los campos necesarios

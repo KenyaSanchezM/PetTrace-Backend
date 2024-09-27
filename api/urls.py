@@ -1,5 +1,5 @@
 from django.urls import path
-from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog,PerfilUsuarioView, dog_filter
+from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog,PerfilUsuarioView, dog_filter, primeros_seis_perros
 from .views.ai_views import predict_breed
 
 from rest_framework_simplejwt.views import (
@@ -27,4 +27,5 @@ urlpatterns = [
     path('mark-dog/<int:pk>/', mark_dog, name='mark-dog'),
     path('ir-perfil-usuario/<int:user_id>/', PerfilUsuarioView.as_view(), name='ir-perfil-usuario'),
     path('dog-filter/', dog_filter, name='dog-filter'),
+    path('perros-perdidos/',primeros_seis_perros,name='perros-perdidos'),
 ]
