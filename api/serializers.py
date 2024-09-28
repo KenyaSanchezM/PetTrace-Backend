@@ -42,23 +42,27 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class ShelterUserSerializer(serializers.ModelSerializer):
-    profile_image = serializers.ImageField(required=False)
 
+    image1 = serializers.ImageField(required=False)
+    image2 = serializers.ImageField(required=False)
+    image3 = serializers.ImageField(required=False)
+    profile_image = serializers.ImageField(required=False)
+    
     class Meta:
         model = ShelterUser
-        fields = ['email', 'nombre', 'telefono', 'user_type', 'profile_image', 'password', 'estado', 'ciudad', 'direccion', 'codigoPostal']
+        fields = ['id','email', 'nombre', 'telefono', 'user_type', 'profile_image', 'password', 'estado', 'ciudad', 'direccion', 'codigoPostal', 'descripcion', 'cuenta', 'image1', 'image2', 'image3']
         extra_kwargs = {
             'password': {'write_only': True},
-            'profile_image': {'required': False}
         }
 
     def create(self, validated_data):
+        profile_image = validated_data.pop('profile_image', None)
+        image1 = validated_data.pop('image1', None)
+        image2 = validated_data.pop('image2', None)
+        image3 = validated_data.pop('image3', None)
         email = validated_data['email']
         if ShelterUser.objects.filter(email=email).exists():
             raise serializers.ValidationError({'email': 'Este email ya está registrado.'})
-
-        # Extraer imagen de perfil si existe
-        profile_image = validated_data.pop('profile_image', None)
 
         shelter_user = ShelterUser(
             email=validated_data['email'],
@@ -68,6 +72,8 @@ class ShelterUserSerializer(serializers.ModelSerializer):
             ciudad=validated_data.get('ciudad', None),
             direccion=validated_data.get('direccion', None),
             codigoPostal=validated_data.get('codigoPostal', None),
+            descripcion=validated_data.get('descripcion',None),
+            cuenta=validated_data.get('cuenta',None),
             user_type=validated_data['user_type'],
         )
         shelter_user.set_password(validated_data['password'])
@@ -75,6 +81,12 @@ class ShelterUserSerializer(serializers.ModelSerializer):
         # Asignar la imagen de perfil si está presente
         if profile_image:
             shelter_user.profile_image = profile_image
+        if image1:
+            shelter_user.image1 = image1
+        if image2:
+            shelter_user.image2 = image2
+        if image3:
+            shelter_user.image3 = image3
 
         shelter_user.save()
         return shelter_user
@@ -107,3 +119,4 @@ class LostDogSerializer(serializers.ModelSerializer):
     class Meta:
         model = DogPrediction
         fields = ['id', 'nombre', 'image', 'caracteristicas', 'form_type']  # Asegúrate de incluir todos los campos necesarios
+

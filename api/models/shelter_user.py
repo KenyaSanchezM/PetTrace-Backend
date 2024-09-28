@@ -8,7 +8,7 @@ def validate_postal_code(value):
         raise ValidationError('El código postal debe tener exactamente 5 dígitos y solo números.')
 
 class ShelterUserManager(BaseUserManager):
-    def create_user(self, email, nombre, telefono, password=None, estado=None, ciudad=None, direccion=None, codigoPostal=None):
+    def create_user(self, email, nombre, telefono, password=None, estado=None, ciudad=None, direccion=None, codigoPostal=None, descripcion=None, cuenta=None):
         if not email:
             raise ValueError("El email debe ser proporcionado")
         shelter_user = self.model(
@@ -19,6 +19,8 @@ class ShelterUserManager(BaseUserManager):
             ciudad=ciudad,
             direccion=direccion,
             codigoPostal=codigoPostal,
+            descripcion=descripcion,
+            cuenta=cuenta,
             user_type='shelter'
         )
         shelter_user.set_password(password)  # Cambiado de 'user' a 'shelter_user'
@@ -34,7 +36,9 @@ class ShelterUserManager(BaseUserManager):
             estado=None,
             ciudad=None,
             direccion=None,
-            codigoPostal=None
+            codigoPostal=None,
+            descripcion=None, 
+            cuenta=None
         )
         shelter_user.is_admin = True
         shelter_user.save(using=self._db)
@@ -45,6 +49,11 @@ class ShelterUser(User):
     ciudad = models.CharField(max_length=128, blank=True, null=True)
     direccion = models.CharField(max_length=128, blank=True, null=True)
     codigoPostal = models.CharField(max_length=5, blank=True, null=True, validators=[validate_postal_code])
+    descripcion = models.CharField(max_length=128, blank=True, null=True)
+    cuenta = models.CharField(max_length=25, blank=True, null=True)
+    image1 = models.ImageField(upload_to='users_images/', blank=True, null=True)
+    image2 = models.ImageField(upload_to='users_images/', blank=True, null=True)
+    image3 = models.ImageField(upload_to='users_images/', blank=True, null=True)
 
     objects = ShelterUserManager()
 

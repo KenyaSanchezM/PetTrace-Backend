@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from api.models.shelter_user import ShelterUser
+from api.models.user import User
 from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer, DogPredictionShelterSerializer, LostDogSerializer
 from api.models.dog_prediction import DogPrediction
 from api.models.dog_prediction_shelter import DogPredictionShelter
@@ -33,6 +34,9 @@ from django.db.models import Q
 from datetime import date
 from django.db import models
 from django.db.models import OuterRef, Subquery, Exists
+from rest_framework.generics import ListAPIView
+
+
 
 
 
@@ -64,19 +68,15 @@ def register_user(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_shelter(request):
-    # Combina data y files
-    data = request.data.copy()  # Crear una copia mutable de request.data
-    data.update(request.FILES)  # Añadir los archivos al diccionario
-
-    # Inicializa el serializer con los datos combinados
-    serializer = ShelterUserSerializer(data=data)
+    serializer = ShelterUserSerializer(data=request.data)
 
     if serializer.is_valid():
         serializer.save()
         return Response({'message': 'Refugio registrado con éxito'}, status=status.HTTP_201_CREATED)
     else:
+        # Imprime los errores del serializer para depuración
+        print("Errores del serializer:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -435,6 +435,7 @@ def mark_dog(request, pk):  # pk en lugar de dog_id
         return Response({'error': 'Perro no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
 
+
 class PerfilUsuarioView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -453,7 +454,6 @@ class PerfilUsuarioView(APIView):
             return Response(user_data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
-
 
 logger = logging.getLogger('api')
 
@@ -541,3 +541,45 @@ def primeros_seis_perros(request):
     print(perros)  # Verifica qué registros se están obteniendo
     serializer = LostDogSerializer(perros, many=True)  # Usa el nuevo serializer
     return Response(serializer.data)
+
+
+@permission_classes([AllowAny])
+class Refugios(APIView):
+    def get(self, request):
+        estado = request.query_params.get('estado', None)
+        ciudad = request.query_params.get('ciudad', None)
+
+        refugios = ShelterUser.objects.all()
+
+        if estado:
+            refugios = refugios.filter(estado=estado)
+        if ciudad:
+            refugios = refugios.filter(ciudad=ciudad)
+
+        refugios_serializados = ShelterUserSerializer(refugios, many=True)
+        return Response(refugios_serializados.data, status=status.HTTP_200_OK)
+
+
+@permission_classes([AllowAny])
+class perfil_shelter_presente(APIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            # Obtener el ID del refugio desde la URL
+            shelter_id = kwargs.get('id')  # Asegúrate de que 'id' está en la URL
+            # Obtener el perfil del refugio
+            shelter_user = ShelterUser.objects.get(pk=shelter_id)
+
+            # Obtener las predicciones asociadas a este refugio, si existe una relación
+            predictions = DogPredictionShelter.objects.filter(shelter_user=shelter_user)
+
+            # Serializar los datos del refugio
+            user_serializer = ShelterUserSerializer(shelter_user)
+            prediction_serializer = DogPredictionShelterSerializer(predictions, many=True)
+
+            # Devolver la información del refugio y las predicciones
+            return Response({
+                'shelter_user': user_serializer.data,
+                'predictions': prediction_serializer.data if predictions.exists() else []
+            })
+        except ShelterUser.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
