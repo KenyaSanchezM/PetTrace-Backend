@@ -38,8 +38,6 @@ from rest_framework.generics import ListAPIView
 
 
 
-
-
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
@@ -538,7 +536,7 @@ def dog_filter(request):
 @permission_classes([AllowAny])
 def primeros_seis_perros(request):
     perros = DogPrediction.objects.order_by('fecha')[:6]
-    print(perros)  # Verifica qué registros se están obteniendo
+    # print(perros)  Verifica qué registros se están obteniendo
     serializer = LostDogSerializer(perros, many=True)  # Usa el nuevo serializer
     return Response(serializer.data)
 
@@ -583,3 +581,53 @@ class perfil_shelter_presente(APIView):
             })
         except ShelterUser.DoesNotExist:
             return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def refugios_principal(request):
+    refugios = ShelterUser.objects.order_by('id')[:4]
+    #print(refugios)   Verifica qué registros se están obteniendo
+    serializer = ShelterUserSerializer(refugios, many=True)  # Usa el nuevo serializer
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def MatchPetsView(request):
+    shelter_id = request.data.get('shelter_id')  
+    tamaño = request.data.get('tamanio')
+    color = request.data.get('color', [])  # Lista de colores
+    raza = request.data.get('breeds')
+    temperamento = request.data.get('temperamento')
+
+    color = request.data.get('color', [])
+    if isinstance(color, str):
+        color = json.loads(color)
+
+    # Filtra los perros que pertenecen al refugio específico
+    queryset = DogPredictionShelter.objects.filter(shelter_user_id=shelter_id)
+
+    # Preparamos las consultas condicionales
+    filters = Q()  # Inicia un objeto vacío de tipo Q para ir acumulando condiciones
+    num_criterios = 0
+
+    # Agregamos criterios dinámicamente, incrementando el contador por cada filtro activo
+    if tamaño:
+        filters |= Q(tamanio=tamaño)  # Cambia '&=' por '|=' para permitir coincidencias
+        num_criterios += 1
+    if color:
+        filters |= Q(color__in=color)  # También utiliza '|='
+        num_criterios += 1
+    if raza:
+        filters |= Q(breeds__icontains=raza)  # También utiliza '|='
+        num_criterios += 1
+    if temperamento:
+        filters |= Q(temperamento=temperamento)  # También utiliza '|='
+        num_criterios += 1
+
+    # Filtramos los perros que coinciden con los criterios
+    if num_criterios > 0:
+        queryset = queryset.filter(filters).distinct()  # Filtra con todas las condiciones acumuladas
+
+    # Serializa los resultados
+    serializer = DogPredictionShelterSerializer(queryset.distinct(), many=True)
+    return Response(serializer.data)
