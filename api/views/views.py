@@ -368,33 +368,45 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsAuthenticated])
 def register_event(request):
     if request.method == 'POST':
+        imagen_evento = request.FILES.get('imagen_evento')
         try:
-            # Verificar si el usuario es un refugio
-            try:
-                shelter_user = ShelterUser.objects.get(pk=request.user.pk)
-            except ShelterUser.DoesNotExist:
-                return JsonResponse({'error': 'ShelterUser instance not found'}, status=404)
+            shelter_user = ShelterUser.objects.get(pk=request.user.pk)
+        except ShelterUser.DoesNotExist:
+            return JsonResponse({'error': 'ShelterUser instance not found'}, status=404)
 
-            # Crear el evento
-            event_advertisement = EventAdvertisement(
-                nombre_evento=request.POST.get('nombre_evento', ''),
-                descripcion_evento=request.POST.get('descripcion_evento', ''),
-                lugar_evento=request.POST.get('lugar_evento', ''),
-                motivo=request.POST.get('motivo',''),
-                anfitrion_evento=request.POST.get('anfitrion_evento', ''),
-                fecha_evento=request.POST.get('fecha_evento',''),
-                hora_evento=request.POST.get('hora_evento',''),
-                refUser=shelter_user
-            )
+        # Imprimir los datos recibidos
+        print(request.POST)  # Agrega esto para verificar los datos recibidos
+
+        # Crear el evento
+        event_advertisement = EventAdvertisement(
+            nombre_evento=request.POST.get('nombre_evento', ''),
+            descripcion_evento=request.POST.get('descripcion_evento', ''),
+            lugar_evento=request.POST.get('lugar_evento', ''),
+            motivo=request.POST.get('motivo', ''),
+            anfitrion_evento=request.POST.get('anfitrion_evento', ''),
+            fecha_evento=request.POST.get('fecha_evento', ''),
+            hora_evento=request.POST.get('hora_evento', ''),
+            imagen_evento=imagen_evento,
+            
+            refUser=shelter_user
+        )
+        
+        try:
             event_advertisement.save()
-
-            # Serializar el evento registrado
-            serializer = EventAdvertisementSerializer(event_advertisement)
-            return JsonResponse({'message': 'Registro guardado exitosamente', 'event': serializer.data})
-
         except Exception as e:
-            logger.error(f"Error al registrar el evento de refugio: {str(e)}")
+            logger.error(f"Error al guardar el evento: {str(e)}")  # Manejo de errores al guardar
             return JsonResponse({'error': str(e)}, status=500)
 
+        serializer = EventAdvertisementSerializer(event_advertisement)
+        return JsonResponse({'message': 'Registro guardado exitosamente', 'event': serializer.data})
+
     return JsonResponse({'error': 'Invalid request'}, status=400)
-            
+
+@permission_classes([AllowAny])
+class Eventos(APIView):
+    def get(self, request):
+        
+        eventos = EventAdvertisement.objects.all()
+
+        eventos_serializados = EventAdvertisementSerializer(eventos, many=True)
+        return Response(eventos_serializados.data, status=status.HTTP_200_OK)

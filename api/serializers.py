@@ -115,7 +115,8 @@ class EventAdvertisementSerializer(serializers.ModelSerializer):
             'motivo',            # Motivo del evento
             'anfitrion_evento',   # Quién será el anfitrión
             'fecha_evento',      # Fecha del evento
-            'hora_evento'        # Hora del evento
+            'hora_evento',        # Hora del evento
+            'imagen_evento'
         ]
 
     
