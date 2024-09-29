@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente
+from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos
 from .views.ai_views import predict_breed
 
 
@@ -31,5 +31,7 @@ urlpatterns = [
     path('perros-perdidos/',primeros_seis_perros,name='perros-perdidos'),
     path('refugios/', Refugios.as_view(), name='refugios'),
     path('ir-perfil-refugio/<int:id>/', perfil_shelter_presente.as_view(), name='perfil_usuario_refugio'),
+    path('registrar-evento/', register_event, name='registrar-evento'),
+    path('eventos/', Eventos.as_view(), name='eventos'),
 ]
 
