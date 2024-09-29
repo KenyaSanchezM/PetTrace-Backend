@@ -4,6 +4,7 @@ from api.models.user import User
 from api.models.shelter_user import ShelterUser
 from api.models.dog_prediction import DogPrediction
 from api.models.dog_prediction_shelter import DogPredictionShelter
+from api.models.event_advertisement import EventAdvertisement
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -86,7 +87,7 @@ class LoginSerializer(serializers.Serializer):
 
 
 class DogPredictionSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)  # Cambia este campo para incluir los datos completos del usuario
+    user = UserSerializer(read_only=True)  
 
     class Meta:
         model = DogPrediction
@@ -99,3 +100,22 @@ class DogPredictionShelterSerializer(serializers.ModelSerializer):
         model = DogPredictionShelter  # Suponiendo que este es el modelo para las predicciones de refugios
         fields = ['id','shelter_user', 'breeds', 'image', 'nombre', 'edad', 'color',
          'caracteristicas', 'sexo', 'tamanio', 'temperamento', 'vacunas', 'esterilizado', 'profile_image1', 'profile_image2']
+
+class EventAdvertisementSerializer(serializers.ModelSerializer):
+    refUser = ShelterUserSerializer()
+
+    class Meta:
+        model = EventAdvertisement
+        fields = [
+            'id',
+            'refUser',          # Usuario tipo refugio que crea el evento
+            'nombre_evento',     # Nombre del evento
+            'descripcion_evento', # Descripción del evento
+            'lugar_evento',      # Lugar donde se llevará a cabo
+            'motivo',            # Motivo del evento
+            'anfitrion_evento',   # Quién será el anfitrión
+            'fecha_evento',      # Fecha del evento
+            'hora_evento'        # Hora del evento
+        ]
+
+    
