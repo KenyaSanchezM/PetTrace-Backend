@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos
+from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos, delete_event, update_event
 from .views.ai_views import predict_breed
 
 
@@ -24,6 +24,8 @@ urlpatterns = [
     path('dog-predictions/<int:pk>/update/', update_dog_prediction, name='update-dog-prediction'),
     path('dog-predictions-shelter/<int:pk>/delete/', delete_dog_prediction_shelter, name='delete-dog-prediction-shelter'),
     path('dog-predictions-shelter/<int:pk>/update/', update_dog_prediction_shelter, name='update-dog-prediction-shelter'),
+    path('event/<int:pk>/delete/', delete_event, name='delete-event'),
+    path('event/<int:pk>/update/', update_event, name='update-event'),
     path('search-matches/', SearchDogsView.as_view(), name='search-matches'),
     path('mark-dog/<int:pk>/', mark_dog, name='mark-dog'),
     path('ir-perfil-usuario/<int:user_id>/', PerfilUsuarioView.as_view(), name='ir-perfil-usuario'),

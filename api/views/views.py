@@ -638,3 +638,29 @@ class Eventos(APIView):
         eventos_serializados = EventAdvertisementSerializer(eventos, many=True)
         return Response(eventos_serializados.data, status=status.HTTP_200_OK)
 
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_event(request, pk):
+    try:
+        event = EventAdvertisement.objects.get(pk=pk, refUser=request.user)
+    except EventAdvertisement.DoesNotExist:
+        return Response({'error': 'Publicación no encontrada o no tienes permiso para eliminarla.'}, status=status.HTTP_404_NOT_FOUND)
+
+    event.delete()
+    return Response({'message': 'Publicación eliminada con éxito.'}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_event(request, pk):
+    try:
+        event = EventAdvertisement.objects.get(pk=pk, refUser=request.user)
+    except EventAdvertisement.DoesNotExist:
+        return Response({'error': 'Publicación no encontrada o no tienes permiso para actualizarla.'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = EventAdvertisementSerializer(event, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
