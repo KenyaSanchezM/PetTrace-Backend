@@ -136,14 +136,19 @@ class perfil_usuario_refugio(APIView):
             # Obtener las predicciones asociadas a este refugio, si existe una relación
             predictions = DogPredictionShelter.objects.filter(shelter_user=shelter_user)
 
+            # Obtener los eventos asociados a este refugio
+            events = EventAdvertisement.objects.filter(refUser=shelter_user)
+
             # Serializar los datos del refugio
             user_serializer = ShelterUserSerializer(shelter_user)
             prediction_serializer = DogPredictionShelterSerializer(predictions, many=True)
+            event_serializer = EventAdvertisementSerializer(events, many=True)
 
             # Devolver la información del refugio y las predicciones
             return Response({
                 'shelter_user': user_serializer.data,
-                'predictions': prediction_serializer.data if predictions.exists() else []
+                'predictions': prediction_serializer.data if predictions.exists() else [],
+                'events': event_serializer.data if events.exists() else [],
             })
         except ShelterUser.DoesNotExist:
             return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
@@ -685,3 +690,31 @@ def MatchPetsView(request):
     # Serializa los resultados
     serializer = DogPredictionShelterSerializer(queryset.distinct(), many=True)
     return Response(serializer.data)
+
+
+@permission_classes([AllowAny])
+class perfilshelter_presente(APIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            # Obtener el ID del refugio desde la URL
+            shelter_id = kwargs.get('id')  # Asegúrate de que 'id' está en la URL
+            # Obtener el perfil del refugio
+            shelter_user = ShelterUser.objects.get(pk=shelter_id)
+
+            # Obtener las predicciones asociadas a este refugio, si existe una relación
+            predictions = DogPredictionShelter.objects.filter(shelter_user=shelter_user)
+            eventos = EventAdvertisement.objects.filter(refUser=shelter_user)
+
+            # Serializar los datos del refugio
+            user_serializer = ShelterUserSerializer(shelter_user)
+            prediction_serializer = DogPredictionShelterSerializer(predictions, many=True)
+            eventos_serializer = EventAdvertisementSerializer(eventos, many=True )
+
+            # Devolver la información del refugio y las predicciones
+            return Response({
+                'shelter_user': user_serializer.data,
+                'predictions': prediction_serializer.data if predictions.exists() else [],
+                'eventos': eventos_serializer.data if eventos.exists() else []
+            })
+        except ShelterUser.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
