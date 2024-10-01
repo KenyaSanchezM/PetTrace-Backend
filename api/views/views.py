@@ -10,8 +10,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from api.models.shelter_user import ShelterUser
 from api.models.user import User
-from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer, DogPredictionShelterSerializer, LostDogSerializer
+from api.serializers import UserSerializer, ShelterUserSerializer, LoginSerializer, DogPredictionSerializer,CustomTokenObtainPairSerializer, DogPredictionShelterSerializer, EventAdvertisementSerializer, LostDogSerializer
 from api.models.dog_prediction import DogPrediction
+from api.models.event_advertisement import EventAdvertisement
 from api.models.dog_prediction_shelter import DogPredictionShelter
 from api.models.user import UserDogRelationship
 from django.contrib.auth import get_user_model
@@ -431,6 +432,57 @@ def mark_dog(request, pk):  # pk en lugar de dog_id
     
     except DogPrediction.DoesNotExist:
         return Response({'error': 'Perro no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+    
+
+logger = logging.getLogger(__name__)
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def register_event(request):
+    if request.method == 'POST':
+        imagen_evento = request.FILES.get('imagen_evento')
+        try:
+            shelter_user = ShelterUser.objects.get(pk=request.user.pk)
+        except ShelterUser.DoesNotExist:
+            return JsonResponse({'error': 'ShelterUser instance not found'}, status=404)
+
+        # Imprimir los datos recibidos
+        print(request.POST)  # Agrega esto para verificar los datos recibidos
+
+        # Crear el evento
+        event_advertisement = EventAdvertisement(
+            nombre_evento=request.POST.get('nombre_evento', ''),
+            descripcion_evento=request.POST.get('descripcion_evento', ''),
+            lugar_evento=request.POST.get('lugar_evento', ''),
+            motivo=request.POST.get('motivo', ''),
+            anfitrion_evento=request.POST.get('anfitrion_evento', ''),
+            fecha_evento=request.POST.get('fecha_evento', ''),
+            hora_evento=request.POST.get('hora_evento', ''),
+            imagen_evento=imagen_evento,
+            
+            refUser=shelter_user
+        )
+        
+        try:
+            event_advertisement.save()
+        except Exception as e:
+            logger.error(f"Error al guardar el evento: {str(e)}")  # Manejo de errores al guardar
+            return JsonResponse({'error': str(e)}, status=500)
+
+        serializer = EventAdvertisementSerializer(event_advertisement)
+        return JsonResponse({'message': 'Registro guardado exitosamente', 'event': serializer.data})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@permission_classes([AllowAny])
+class Eventos(APIView):
+    def get(self, request):
+        
+        eventos = EventAdvertisement.objects.all()
+
+        eventos_serializados = EventAdvertisementSerializer(eventos, many=True)
+        return Response(eventos_serializados.data, status=status.HTTP_200_OK)
 
 
 

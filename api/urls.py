@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente,refugios_principal,MatchPetsView
+from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, register_event,Eventos, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente,refugios_principal,MatchPetsView
 
 
 from rest_framework_simplejwt.views import (
@@ -32,5 +32,7 @@ urlpatterns = [
     path('ir-perfil-refugio/<int:id>/', perfil_shelter_presente.as_view(), name='perfil_usuario_refugio'),
     path('refugios-principal/',refugios_principal,name='refugios-principal'),
     path('match/', MatchPetsView, name='match-pets'),
+    path('registrar-evento/', register_event, name='registrar-evento'),
+    path('eventos/', Eventos.as_view(), name='eventos'),
 ]
 
