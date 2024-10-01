@@ -1,6 +1,7 @@
 from django.urls import path, include
-from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos, delete_event, update_event
+from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos, delete_event, update_event,refugios_principal,MatchPetsView
 from .views.ai_views import predict_breed
+
 
 
 from rest_framework_simplejwt.views import (
@@ -11,7 +12,7 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path('registro-perros/', register_dog, name='registro-perros'),
     path('registro-perros-refugios/', register_dog_shelter, name='registro-perros-refugios'),
-    path('predict-breed/', predict_breed, name='predict-breed'),
+    #path('predict-breed/', predict_breed, name='predict-breed'),
     path('registro-usuario/', register_user, name='register'), 
     path('registro-refugio/', register_shelter, name='registro-refugio'),
     path('inicio-sesion/', login_user, name='login_user'),
@@ -35,5 +36,7 @@ urlpatterns = [
     path('ir-perfil-refugio/<int:id>/', perfil_shelter_presente.as_view(), name='perfil_usuario_refugio'),
     path('registrar-evento/', register_event, name='registrar-evento'),
     path('eventos/', Eventos.as_view(), name='eventos'),
+    path('refugios-principal/',refugios_principal,name='refugios-principal'),
+    path('match/', MatchPetsView, name='match-pets'),
 ]
 
