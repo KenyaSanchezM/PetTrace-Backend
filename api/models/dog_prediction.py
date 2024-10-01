@@ -13,7 +13,9 @@ class DogPrediction(models.Model):
     image = models.ImageField(upload_to='dog_images/', default='temp_image.jpg' )
     profile_image1 = models.ImageField(upload_to='dog_images/', null=True, blank=True)  # Primera imagen para mostrar
     profile_image2 = models.ImageField(upload_to='dog_images/', null=True, blank=True)  # Segunda imagen para mostrar
-    ubicacion = models.CharField(max_length=255, blank=True)
+    estado = models.CharField(max_length=128, blank=True, null=True)
+    ciudad = models.CharField(max_length=128, blank=True, null=True)
+    direccion = models.CharField(max_length=128, blank=True, null=True)
     tieneCollar = models.CharField(max_length=255, blank=True)
     nombre = models.CharField(max_length=255, blank=True)
     edad = models.CharField(max_length=50, blank=True)

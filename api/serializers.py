@@ -104,7 +104,7 @@ class DogPredictionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DogPrediction
-        fields = ['id','nombre', 'edad', 'color', 'user', 'ubicacion', 'tieneCollar','breeds',
+        fields = ['id','nombre', 'edad', 'color', 'user', 'estado','ciudad','direccion', 'tieneCollar','breeds',
                   'caracteristicas', 'fecha', 'form_type', 'image', 'profile_image1', 'profile_image2', 'sexo','user_id']
 
                   
