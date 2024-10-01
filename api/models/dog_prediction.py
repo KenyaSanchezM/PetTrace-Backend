@@ -16,7 +16,7 @@ class DogPrediction(models.Model):
     ubicacion = models.CharField(max_length=255, blank=True)
     tieneCollar = models.CharField(max_length=255, blank=True)
     nombre = models.CharField(max_length=255, blank=True)
-    edad = models.IntegerField()
+    edad = models.CharField(max_length=50, blank=True)
     color = models.CharField(max_length=255, blank=True)
     caracteristicas = models.TextField(blank=True)
     fecha = models.DateField(blank=True)

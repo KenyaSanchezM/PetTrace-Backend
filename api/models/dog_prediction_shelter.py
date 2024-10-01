@@ -9,7 +9,7 @@ class DogPredictionShelter(models.Model):
     profile_image1 = models.ImageField(upload_to='dog_images/', null=True, blank=True)  # Primera imagen para mostrar
     profile_image2 = models.ImageField(upload_to='dog_images/', null=True, blank=True)  # Segunda imagen para mostrar
     nombre = models.CharField(max_length=255, blank=True)
-    edad = models.IntegerField()
+    edad = models.CharField(max_length=50, blank=True)
     color = models.CharField(max_length=255, blank=True)
     caracteristicas = models.TextField(blank=True)
     sexo = models.CharField(max_length=50, blank=True)
