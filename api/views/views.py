@@ -575,15 +575,18 @@ class perfil_shelter_presente(APIView):
 
             # Obtener las predicciones asociadas a este refugio, si existe una relación
             predictions = DogPredictionShelter.objects.filter(shelter_user=shelter_user)
+            eventos = EventAdvertisement.objects.filter(refUser=shelter_user)
 
             # Serializar los datos del refugio
             user_serializer = ShelterUserSerializer(shelter_user)
             prediction_serializer = DogPredictionShelterSerializer(predictions, many=True)
+            eventos_serializer = EventAdvertisementSerializer(eventos, many=True )
 
             # Devolver la información del refugio y las predicciones
             return Response({
                 'shelter_user': user_serializer.data,
-                'predictions': prediction_serializer.data if predictions.exists() else []
+                'predictions': prediction_serializer.data if predictions.exists() else [],
+                'eventos': eventos_serializer.data if eventos.exists() else []
             })
         except ShelterUser.DoesNotExist:
             return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
@@ -650,17 +653,26 @@ def delete_event(request, pk):
     event.delete()
     return Response({'message': 'Publicación eliminada con éxito.'}, status=status.HTTP_204_NO_CONTENT)
 
+logger = logging.getLogger(__name__)
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_event(request, pk):
     try:
-        event = EventAdvertisement.objects.get(pk=pk, refUser=request.user)
+        # Intenta obtener el evento que se va a actualizar
+        eventos = EventAdvertisement.objects.get(pk=pk, refUser=request.user)
     except EventAdvertisement.DoesNotExist:
+        # Loggea si no se encuentra el evento
+        logger.error(f'Evento con ID {pk} no encontrado o usuario sin permiso.')
         return Response({'error': 'Publicación no encontrada o no tienes permiso para actualizarla.'}, status=status.HTTP_404_NOT_FOUND)
 
-    serializer = EventAdvertisementSerializer(event, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    # Intenta validar y guardar los datos actualizados
+    serializer_events = EventAdvertisementSerializer(eventos, data=request.data, partial=True)
+    if serializer_events.is_valid():
+        serializer_events.save()
+        logger.info(f'Evento con ID {pk} actualizado correctamente por el usuario {request.user}.')
+        return Response(serializer_events.data, status=status.HTTP_200_OK)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Si la validación falla, loggea los errores
+    logger.error(f'Errores de validación para el evento con ID {pk}: {serializer_events.errors}')
+    return Response(serializer_events.errors, status=status.HTTP_400_BAD_REQUEST)
