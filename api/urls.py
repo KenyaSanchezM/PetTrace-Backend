@@ -1,6 +1,6 @@
 from django.urls import path, include
 from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos, delete_event, update_event,refugios_principal,MatchPetsView
-from .views.ai_views import predict_breed
+
 
 
 
