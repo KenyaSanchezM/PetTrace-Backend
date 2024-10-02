@@ -23,9 +23,11 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'nombre', 'telefono', 'password', 'user_type', 'profile_image']
+        fields = ['id','email', 'nombre', 'telefono', 'password', 'user_type', 'profile_image']
         extra_kwargs = {
-            'password': {'write_only': True}
+            'id': {'read_only': True}, 
+            'password': {'write_only': True},
+            'profile_image': {'required': False},
         }
 
     def create(self, validated_data):
@@ -41,6 +43,18 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+    
+    def update(self, instance, validated_data):
+        # Si quieres manejar el campo password, puedes hacerlo aquí.
+        password = validated_data.pop('password', None)
+        if password:
+            instance.set_password(password)
+
+        # Actualiza otros campos
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 class ShelterUserSerializer(serializers.ModelSerializer):
 

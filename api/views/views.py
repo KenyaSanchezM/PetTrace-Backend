@@ -725,3 +725,28 @@ def MatchPetsView(request):
     serializer = DogPredictionShelterSerializer(queryset.distinct(), many=True)
     return Response(serializer.data)
 
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_user_profile(request, pk):
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = UserSerializer(user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_user_profile(request, pk):
+    try:
+        user = User.objects.get(pk=pk)
+        if request.user != user:
+            return Response({'error': 'No tienes permiso para eliminar este perfil'}, status=403)
+        user.delete()
+        return Response({'message': 'Perfil eliminado correctamente'}, status=204)
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=404)

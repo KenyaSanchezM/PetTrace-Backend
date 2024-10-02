@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos, delete_event, update_event,refugios_principal,MatchPetsView
+from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos, delete_event, update_event,refugios_principal,MatchPetsView,update_user_profile,delete_user_profile
 
 
 
@@ -38,5 +38,7 @@ urlpatterns = [
     path('eventos/', Eventos.as_view(), name='eventos'),
     path('refugios-principal/',refugios_principal,name='refugios-principal'),
     path('match/', MatchPetsView, name='match-pets'),
+     path('user-profile/update/<int:pk>/', update_user_profile, name='update_user_profile'),
+    path('user-profile/delete/<int:pk>/', delete_user_profile, name='delete_user_profile')
 ]
 
