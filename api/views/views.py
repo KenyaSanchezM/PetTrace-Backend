@@ -175,7 +175,9 @@ def register_dog(request):
                 image=img_file,
                 profile_image1=profile_img1,
                 profile_image2=profile_img2,
-                ubicacion=request.POST.get('ubicacion', ''),
+                estado=request.POST.get('estado', ''),
+                ciudad=request.POST.get('ciudad', ''),
+                direccion=request.POST.get('direccion', ''),
                 tieneCollar=request.POST.get('tieneCollar', ''),
                 nombre=request.POST.get('nombre', ''),
                 edad=request.POST.get('edad', ''),
@@ -267,7 +269,7 @@ class DogPredictionListView(generics.ListAPIView):
         ).filter(
             Q(userdogrelationship__user=user, userdogrelationship__is_mine=True) |
             Q(relationship_exists__isnull=True)
-        ).order_by('-fecha')
+        ).order_by('-id')
 
         # Usar un conjunto para evitar duplicados
         seen_dogs = set()
@@ -479,59 +481,47 @@ def dog_filter(request):
         is_mine = False
     else:
         is_mine = None  # Si no está presente o es otro valor, lo consideramos como no seleccionado
-    
-    #print(f"Valor de is_mine recibido: {is_mine}")
 
     queryset = DogPrediction.objects.all()
 
-    #logger.info(f"Valor de is mine recibido1: {is_mine}")
-    #logger.info(f"Valor de : {sexo}")
-    #logger.info(f"Valor de : {fecha}")
-    #logger.info(f"Valor de : {estado}")
-
+    # Filtrar por razas
     if breeds:
         breeds_list = [breed.strip() for breed in breeds.split(',')][:5]  # Limpiar espacios y limitar a las primeras 5
         if len(breeds_list) > 0:
-            breed_queries = Q()  # Inicializar Q para las razas
-
-            # Añadir condiciones para cada raza
+            breed_queries = Q()
             for breed in breeds_list:
-                breed_queries |= Q(breeds__icontains=breed)  # Usar 'icontains' para coincidir con el nombre en el registro
-
-            # Filtrar el queryset usando la consulta construida
+                breed_queries |= Q(breeds__icontains=breed)  # 'icontains' para coincidencias parciales
             queryset = queryset.filter(breed_queries)
 
     # Filtrar por colores
     if colors:
         colors_list = [colors.strip() for colors in colors.split(',')]
-        if colors and len(colors_list) > 0:
+        if len(colors_list) > 0:
             color_queries = Q()
-
-            # Añadir condiciones para cada raza
             for color in colors_list:
-                color_queries |= Q(color__icontains=color)  # Usar 'icontains' para coincidir con el nombre en el registro
-
-            # Filtrar el queryset usando la consulta construida
+                color_queries |= Q(color__icontains=color)  # 'icontains' para coincidencias parciales
             queryset = queryset.filter(color_queries)
 
-
+    # Filtrar por 'is_mine'
     if is_mine is not None:
         is_mine = is_mine.lower() == 'true' if isinstance(is_mine, str) else is_mine  # Convertir a booleano si es string
         queryset = queryset.filter(userdogrelationship__user=user, userdogrelationship__is_mine=is_mine)
 
-    # Filtrar por sexo
+    # Filtrar por sexo (convertido a minúsculas)
     if sexo:
+        sexo = sexo.lower()  # Convertir a minúsculas
         logger.info(f"Valor de sexo recibido: {sexo}")
-        queryset = queryset.filter(sexo__iexact=sexo)  # Cambié a 'iexact' para hacer una comparación exacta sin importar mayúsculas
+        queryset = queryset.filter(sexo__iexact=sexo)  # 'iexact' para comparación exacta ignorando mayúsculas
 
     # Filtrar por fecha
     if fecha:
         queryset = queryset.filter(fecha=fecha)
 
-    # Filtrar por estado
+    # Filtrar por estado (convertido a minúsculas)
     if estado:
+        estado = estado.lower()  # Convertir a minúsculas
         logger.info(f"Valor de estado recibido: {estado}")
-        queryset = queryset.filter(form_type=estado)
+        queryset = queryset.filter(form_type__iexact=estado)  # 'iexact' para comparación exacta ignorando mayúsculas
 
     serializer = DogPredictionSerializer(queryset, many=True)
     return Response(serializer.data)
@@ -653,6 +643,8 @@ def delete_event(request, pk):
 
 logger = logging.getLogger(__name__)
 
+
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_event(request, pk):
@@ -688,7 +680,7 @@ def refugios_principal(request):
 def MatchPetsView(request):
     shelter_id = request.data.get('shelter_id')  
     tamaño = request.data.get('tamanio')
-    color = request.data.get('color', [])  # Lista de colores
+    edad = request.data.get('edad')  # Lista de colores
     raza = request.data.get('breeds')
     temperamento = request.data.get('temperamento')
 
@@ -707,8 +699,8 @@ def MatchPetsView(request):
     if tamaño:
         filters |= Q(tamanio=tamaño)  # Cambia '&=' por '|=' para permitir coincidencias
         num_criterios += 1
-    if color:
-        filters |= Q(color__in=color)  # También utiliza '|='
+    if edad:
+        filters |= Q(edad=edad)  # También utiliza '|='
         num_criterios += 1
     if raza:
         filters |= Q(breeds__icontains=raza)  # También utiliza '|='
@@ -750,3 +742,9 @@ def delete_user_profile(request, pk):
         return Response({'message': 'Perfil eliminado correctamente'}, status=204)
     except User.DoesNotExist:
         return Response({'error': 'Usuario no encontrado'}, status=404)
+
+@api_view(['GET'])
+def ultimos_eventos(request):
+    eventos = EventAdvertisement.objects.all().order_by('-fecha_evento')[:3]
+    serializer = EventAdvertisementSerializer(eventos, many=True)
+    return Response(serializer.data)

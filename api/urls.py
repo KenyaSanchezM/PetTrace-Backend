@@ -1,7 +1,5 @@
 from django.urls import path, include
-from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos, delete_event, update_event,refugios_principal,MatchPetsView,update_user_profile,delete_user_profile
-
-
+from .views.views import register_user, register_shelter, login_user, perfil_usuario,register_dog,register_dog_shelter, perfil_usuario_refugio,CustomTokenObtainPairView, DogPredictionListView, delete_dog_prediction, update_dog_prediction,delete_dog_prediction_shelter, update_dog_prediction_shelter, SearchDogsView, mark_dog, Refugios,PerfilUsuarioView, dog_filter, primeros_seis_perros,perfil_shelter_presente, register_event,Eventos, delete_event, update_event,refugios_principal,MatchPetsView,update_user_profile,delete_user_profile,ultimos_eventos
 
 
 from rest_framework_simplejwt.views import (
@@ -26,7 +24,7 @@ urlpatterns = [
     path('dog-predictions-shelter/<int:pk>/delete/', delete_dog_prediction_shelter, name='delete-dog-prediction-shelter'),
     path('dog-predictions-shelter/<int:pk>/update/', update_dog_prediction_shelter, name='update-dog-prediction-shelter'),
     path('event/<int:pk>/delete/', delete_event, name='delete-event'),
-    path('event/<int:pk>/update/', update_event, name='update-event'),
+    path('event/update/<int:pk>/', update_event, name='update-event'),
     path('search-matches/', SearchDogsView.as_view(), name='search-matches'),
     path('mark-dog/<int:pk>/', mark_dog, name='mark-dog'),
     path('ir-perfil-usuario/<int:user_id>/', PerfilUsuarioView.as_view(), name='ir-perfil-usuario'),
@@ -38,7 +36,8 @@ urlpatterns = [
     path('eventos/', Eventos.as_view(), name='eventos'),
     path('refugios-principal/',refugios_principal,name='refugios-principal'),
     path('match/', MatchPetsView, name='match-pets'),
-     path('user-profile/update/<int:pk>/', update_user_profile, name='update_user_profile'),
-    path('user-profile/delete/<int:pk>/', delete_user_profile, name='delete_user_profile')
+    path('user-profile/update/<int:pk>/', update_user_profile, name='update_user_profile'),
+    path('user-profile/delete/<int:pk>/', delete_user_profile, name='delete_user_profile'),
+    path('ultimos-eventos/', ultimos_eventos, name='ultimos-eventos')
 ]
 
